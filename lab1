@@ -1,93 +1,59 @@
 import pandas as pd
 
-df = pd.read_csv('C:/piton/sample_submission.csv')
+# Чтение данных
+df = pd.read_csv('C:/piton/Titanic-Dataset.csv')
 
-print("Первые 5 строк датасета:")
+print("=== АНАЛИЗ ДАННЫХ TITANIC ===")
+
+# Основная информация о данных
+print(f"Размер данных: {df.shape[0]} строк, {df.shape[1]} столбцов")
+print("\nПервые 5 строк:")
 print(df.head())
-print()
+print("\nИнформация о данных:")
+df.info()
 
-print("Информация о датасете:")
-print(df.info())
-print()
+# Обработка пропущенных значений
+print("\n=== ОБРАБОТКА ПРОПУЩЕННЫХ ЗНАЧЕНИЙ ===")
+missing_before = df.isnull().sum()
+print("Пропуски до обработки:")
+print(missing_before[missing_before > 0])
 
-print("Пропущенные значения в каждом столбце:")
-missing_values = df.isnull().sum()
-print(missing_values)
-print()
+# Заполнение пропусков
+df.fillna({
+    'Age': df['Age'].median(),
+    'Embarked': df['Embarked'].mode()[0],
+    'Cabin': 'Unknown'
+}, inplace=True)
 
-print("Заполняем пропущенные значения...")
+print("\nПропуски после обработки:")
+print(df.isnull().sum().sum(), "пропусков осталось")
 
-numeric_columns = df.select_dtypes(include='number').columns
+# Нормализация числовых данных (только выбранных столбцов)
+print("\n=== НОРМАЛИЗАЦИЯ ЧИСЛОВЫХ ДАННЫХ ===")
+numeric_cols = ['Age', 'Fare', 'SibSp', 'Parch']
+for col in numeric_cols:
+    if col in df.columns:
+        df[col] = (df[col] - df[col].min()) / (df[col].max() - df[col].min())
+        print(f"Нормализован {col}")
 
-for column in numeric_columns:
-    if df[column].isnull().any():
-        median_value = df[column].median()
-        df[column].fillna(median_value, inplace=True)
-        print(f"Заполнили {column} медианой: {median_value}")
+# Преобразование категориальных данных
+print("\n=== ПРЕОБРАЗОВАНИЕ КАТЕГОРИАЛЬНЫХ ДАННЫХ ===")
+categorical_cols = ['Sex', 'Embarked']
+df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+print("Категориальные данные преобразованы")
 
-text_columns = df.select_dtypes(include='object').columns
+# Итоговый результат
+print("\n=== РЕЗУЛЬТАТ ===")
+print(f"Итоговый размер: {df.shape[0]} строк, {df.shape[1]} столбцов")
+print("\nПервые 3 строки после обработки:")
+print(df.head(3))
 
-for column in text_columns:
-    if df[column].isnull().any():
-        mode_values = df[column].mode()
-        if not mode_values.empty:
-            mode_value = mode_values[0]
-        else:
-            mode_value = "Unknown"
+# Сохранение результата
+df.to_csv("titanic_processed.csv", index=False)
+print(f"\nДанные сохранены в 'titanic_processed.csv'")
 
-        df[column].fillna(mode_value, inplace=True)
-        print(f"Заполнили {column} значением: '{mode_value}'")
-
-print("\nПроверяем результат заполнения:")
-print(df.isnull().sum())
-print()
-
-print("Нормализуем числовые данные...")
-
-numeric_cols_for_scaling = df.select_dtypes(include='number').columns
-
-for column in numeric_cols_for_scaling:
-    min_val = df[column].min()
-    max_val = df[column].max()
-
-    if max_val != min_val:
-        df[column] = (df[column] - min_val) / (max_val - min_val)
-        print(f"Нормализовали {column} в диапазон [0, 1]")
-    else:
-        print(f"Столбец {column} имеет постоянное значение, нормализация не нужна")
-
-print("Нормализация завершена")
-print()
-
-print("Преобразуем категориальные данные...")
-
-categorical_columns = df.select_dtypes(include='object').columns
-
-if len(categorical_columns) > 0:
-    print(f"Преобразуем столбцы: {list(categorical_columns)}")
-
-    df = pd.get_dummies(df, columns=categorical_columns, drop_first=True)
-    print("One-Hot Encoding применен успешно")
-else:
-    print("Категориальных столбцов для преобразования нет")
-
-print("Преобразование категориальных данных завершено")
-print()
-
-print("Итоговые данные после предобработки:")
-print(df.head())
-print(f"\nРазмер данных после обработки: {df.shape}")
-
-df.to_csv("processed_data.csv", index=False)
-print("\nОбработанные данные сохранены в файл 'processed_data.csv'")
-
-print("\nДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ")
-print(f"Исходный размер данных: информация из метода info() выше")
-print(f"Конечный размер данных: {df.shape[0]} строк, {df.shape[1]} столбцов")
-print(f"Типы данных после обработки:")
+# Дополнительная информация
+print("\n=== СВОДКА ===")
+print(f"Обработано столбцов: {len(df.columns)}")
+print("Типы данных после обработки:")
 print(df.dtypes.value_counts())
-
-print(f"\nНазвания столбцов после обработки ({len(df.columns)} шт.):")
-for i, col in enumerate(df.columns, 1):
-    print(f"{i:2d}. {col}")
-    print(f"{i:2d}. {col}")
